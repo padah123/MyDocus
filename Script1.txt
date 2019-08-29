@@ -1,0 +1,14 @@
+import com.atlassian.jira.component.ComponentAccessor;
+import com.atlassian.jira.issue.Issue;
+import com.atlassian.jira.user.ApplicationUser;
+import java.sql.Timestamp
+
+def updateIssue = ComponentAccessor.getIssueManager().getIssueObject(""+issue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_10802")))
+String startDate = updateIssue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_12300"));
+if(startDate == "" || startDate == null){
+updateIssue.setCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_12300"),new Timestamp(new Date().getTime()))
+log.error " updated start"
+ComponentAccessor.getIssueManager().updateIssue(ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(), updateIssue, com.atlassian.jira.event.type.EventDispatchOption.DO_NOT_DISPATCH, false)
+}
+// customfield_10101 :Custom field Id of "Epic Link"
+// customfield_10405 :Custom field Id of "date field" that you want to update
