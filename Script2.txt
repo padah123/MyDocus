@@ -1,0 +1,61 @@
+import com.atlassian.jira.JiraDataType;
+import com.atlassian.jira.JiraDataTypes;
+import com.atlassian.jira.bc.issue.search.SearchService;
+import com.atlassian.jira.component.ComponentAccessor;
+import com.atlassian.jira.issue.Issue;
+import com.atlassian.jira.issue.search.SearchException;
+import com.atlassian.jira.issue.search.SearchResults;
+import com.atlassian.jira.jql.operand.QueryLiteral;
+import com.atlassian.jira.jql.parser.JqlParseException;
+import com.atlassian.jira.jql.parser.JqlQueryParser;
+import com.atlassian.jira.jql.query.QueryCreationContext;
+import com.atlassian.jira.plugin.jql.function.AbstractJqlFunction;
+import com.atlassian.jira.user.ApplicationUser;
+import com.atlassian.jira.util.MessageSet;
+import com.atlassian.jira.web.bean.PagerFilter;
+import com.atlassian.query.clause.TerminalClause;
+import com.atlassian.query.operand.FunctionOperand;
+import java.sql.Timestamp;
+import com.atlassian.jira.issue.IssueInputParameters;
+import com.atlassian.jira.bc.issue.IssueService;
+import com.atlassian.jira.bc.issue.IssueService.TransitionValidationResult;
+
+String conditionQuery = " issuetype = Story AND \"Epic Link\" = " + issue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_10802"))
+SearchResults searchResults = null;
+try {
+searchResults = ComponentAccessor.getComponent(SearchService.class).search(ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(), ComponentAccessor.getComponent(JqlQueryParser.class).parseQuery(conditionQuery), PagerFilter.getUnlimitedFilter());
+} catch (SearchException e) {
+e.printStackTrace();
+} catch (JqlParseException e) {
+e.printStackTrace();
+}
+List<Issue> issues = searchResults.getIssues();
+
+String conditionQuery1 = "issuetype = Story AND status = Done AND \"Epic Link\" = " + issue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_10802"))
+SearchResults searchResults1 = null;
+try {
+searchResults1 = ComponentAccessor.getComponent(SearchService.class).search(ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(), ComponentAccessor.getComponent(JqlQueryParser.class).parseQuery(conditionQuery1), PagerFilter.getUnlimitedFilter());
+} catch (SearchException e) {
+e.printStackTrace();
+} catch (JqlParseException e) {
+e.printStackTrace();
+}
+List<Issue> issues1 = searchResults1.getIssues();
+
+if(issues.size() == issues1.size()+1){
+def updateIssue = ComponentAccessor.getIssueManager().getIssueObject(""+issue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_10802")))
+updateIssue.setCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObject("customfield_12301"),new Timestamp(new Date().getTime()))
+ComponentAccessor.getIssueManager().updateIssue(ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(), updateIssue, com.atlassian.jira.event.type.EventDispatchOption.DO_NOT_DISPATCH, false)
+
+IssueService issueService = ComponentAccessor.getIssueService();
+IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
+//action Id of the workflow action. Ex "closed" or "Done"
+def actionId = 141
+TransitionValidationResult validationResult = issueService.validateTransition(ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(), updateIssue.getId(), actionId, issueInputParameters)
+if (validationResult.isValid()) {
+issueService.transition(ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(), validationResult)
+} 
+}
+
+// customfield_10101 :Custom field Id of "Epic Link"
+// customfield_10404 :Custom field Id of "date field" that you want to update
